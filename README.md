@@ -6,7 +6,7 @@ I am a passionate Data Science and Business Information System student who uses 
 
 ## Projects
 
-Project 1: Completed in my first university semester, this individual assignment allowed for only two plots. Using R and R Studio, I analysed data on Random Breath Tests (RBTs) since 2008 and related fatalities due to illegal blood alcohol levels. The analysis highlights a strong correlation between drink driving and road fatalities, emphasising the need for increased and efficient RBT implementation to reduce these fatalities.Project Name 2: Brief description or key features.
+Project 1: Completed in my first university semester, this individual assignment allowed for only two plots. Using R and R Studio, I analysed data on Random Breath Tests (RBTs) since 2008 and related fatalities due to illegal blood alcohol levels. The analysis highlights a strong correlation between drink driving and road fatalities, emphasising the need for increased and efficient RBT implementation to reduce these fatalities.
 
 Project 2: ....
 
