@@ -1,0 +1,208 @@
+---
+title: "An RBT approach for safer roads in Australia"
+author: '520453342'
+date: "University of Sydney | DATA1001 | April 2022"
+output:
+  pdf_document:
+    toc: yes
+    toc_depth: 3
+  html_document:
+    code_download: yes
+    toc: yes
+    toc_depth: 3
+    toc_float: yes
+    theme: cosmo
+    highlight: tango
+    self_contained: no
+    always_allow_html: no # Ensure HTML content doesn't interfere with PDF
+subtitle: Client report for Police Department of Australian Road safety. <br> Project 3
+code_folding: hide
+---
+```{css newstyles, echo=FALSE}
+h1, .h1, h2, .h2, h3, .h3 { /* Add space before headings: */
+    margin-top: 56px;
+}
+h1, h2 { /* add border to h1 and h2 */
+  border-bottom: solid 1px #666;
+}
+h2 { /* Resize header 2: */
+  font-size: 22px;
+}
+h3 { /* Resize header 2: */
+  font-size: 18px;
+}
+body { /* Make main text colour black */
+  color: black;
+}
+a { /* Link colours */
+  color: blue;
+}
+.tocify { /* Some toc fixes*/
+  width: 100% !important;
+  border: none; /* remove border */
+}
+.tocify-header { /* fix for horrible indent in toc */
+  text-indent: initial;
+}
+
+```
+
+
+![](images/RBT.png)
+Image Source: https://dowsleyassociates.com.au/what-you-need-to-know-facing-drink-driving-offence/ 
+
+<br>
+
+
+# Client Recommendation {-}
+
+Client : Police Department of Australian Road safety. 
+
+The evidence outlined in this report highlights the correlation of drink driving and road fatalities and recommends an increased implementation of effective RBTs as a countermeasure to effectively decrease road fatalities caused by illegal blood alcohol levels (BAC).
+
+
+# Initial Data Analysis (IDA) {-}
+
+```{r warning=FALSE, message=FALSE}
+library(rmarkdown)
+
+# LOAD DATA
+safety = read.csv("RBT.csv")
+colnames(safety) <- c("Year", "State","RBT_conducted", "RBT_positive", "Licences", "Num_killed","Num_deaths") # changing original column names as they are too long
+
+safety$death_total <- safety$Num_killed +  safety$Num_deaths # creating a new variable to calculate the number of fatalities on the road as a whole 
+
+# Ordering the variables 
+safety$Year_order <- factor(safety$Year, ordered = TRUE)
+safety$States <- factor(safety$State, ordered = TRUE)
+safety$Positive <- factor(safety$RBT_positive, ordered = TRUE)
+safety$conducted <- factor(safety$RBT_conducted, ordered = TRUE)
+safety$licence_order <- factor(safety$Licences, ordered = TRUE)
+```
+
+## Source
+Valid data collected by a reputable government institution https://data.gov.au/data/dataset/australian-random-breath-testing. Recording  every Random Breath Test conducted since 2008, collating it with the number of deaths caused by illegal BAC.
+
+## Data cleaning 
+Variables which provided no usable insight were removed.
+ 
+## Does the number of positive RBT affect the occurrence rate of Road fatalities?{-}
+
+```{r warning=FALSE, message=FALSE, fig.cap="Data Source: https://data.gov.au/data/dataset/australian-random-breath-testing"} 
+ #loading packages
+library(ggplot2)
+library(plotly)
+
+# omitting all NA values
+safety_nona <- na.omit(safety)
+attach(safety_nona)
+
+x_num <- as.numeric(Year)    
+vec_new <- gsub(",", "", RBT_positive)  
+pos <- as.numeric(vec_new) # changing into num
+df <- data.frame(year = x_num, positive = pos) # Grouping positive RBTs according to year
+options(scipen = 999)  # Whole numbers and not in scientific form 
+
+
+# Calculate slope and intercept of line of best fit
+slope_intercept <- coef(lm(death_total ~ pos, data = safety_nona))
+##  (Intercept)          pos 
+## -4.224982573  0.004527664
+
+p <- ggplot(safety_nona) +
+  aes(x = pos, y = death_total, color=States, shape=States) +
+  geom_point() + theme_minimal() + labs(title = "Correlation of Annual road fatalities and Positive RBTs",
+              caption = "Data Source: https://data.gov.au/data/dataset/australian-random-breath-testing",
+              x = "Positive RBTs", y = "Total annual road fatalities caused by an illegal BAC",
+              tag = "Graph 1") 
+
+# plotting the regression line
+p <- p + geom_abline(intercept = -4, slope = 0.0045, colour = 'red')
+
+ggplotly(p)
+```
+
+The regression line shows an obvious positive correlation between Positive RBTs and the total annual road fatalities involving an illegal BAC. Although it cannot be determined that positive RBTs cause road fatalities, but it can be deduced that there is an indefinite relation between the two variables. Hence, as the number of positive RBTs increase the more deaths caused by a BAC above the legal limit increases.
+
+The primary issue with this data set is the missing fatality rates for Victoria, Australian Capital Territory and Western Australia, as well as a few other data points. Not accurately depicting the whole of Australia. 
+
+The more alcohol consumed, drivers blood alcohol concentration rises and so does the risk of fatalities (Roads and Traffic Authority, 2009). 
+
+![](images/Stat.png)
+Source: https://driveformula.com.au/en/wp-content/uploads/2013/04/Drinking-and-driving.pdf
+
+
+
+## Has there been a decline in the number of annual deaths caused by an illegal BAC in Australia? {-}
+
+```{r message=FALSE, warning=FALSE,  fig.cap="Data Source: https://data.gov.au/data/dataset/australian-random-breath-testing"}
+
+# loading packages 
+library(ggplot2)
+library(plotly)
+library(ggrepel)
+library(dplyr)
+
+ 
+safety_nona <- na.omit(safety) # omitting all NA values
+
+a <- ggplot(data=safety_nona, aes(x=Year_order, y=death_total, fill=States)) +
+  geom_bar(stat="identity")+
+  scale_fill_brewer(palette="Paired")+
+  theme_minimal() + theme(panel.border = element_rect(color = "black",fill = NA,size = 1.5))+ scale_x_discrete(guide = guide_axis(angle = 50))+ labs(title = "Total Annual deaths involving a BAC over the legal limit",
+              caption = "Data Source: https://data.gov.au/data/dataset/australian-random-breath-testing",
+              x = "Year", y = "Total annual road deaths involving an illegal BAC",
+              tag = "Graph 2") 
+
+# finding mean 
+mean_for_licence <- mean(as.numeric(safety$licence_order),na.rm=TRUE)
+mean_for_conducted <- mean(as.numeric(safety$RBT_conducted),na.rm=TRUE)
+
+ggplotly(a)
+```
+
+The bar graph is positively skewed which suggest that ongoing countermeasures implemented will keep decreasing the number of road fatalities caused by an illegal BAC. 
+
+Increase RBT visibility as a countermeasure has a deterrent impact on the decrease in road fatalities (Terer, K., & Brown, R.2014). Australian states should breath test larger amount of licensed drivers annual. The mean of licensed drivers is 38 and RBT conducted is 39,355 (annual), since RBTs is the strongest deterrent in decreasing positive RBTS and overall road fatalities, States should aim to increase the proportion of drivers tested annually.
+
+Limitation of RBTs
+<br>
+Selection bias
+<br>
+•During specific seasons or events there is a period of increased RBT enforcement when the potential for drink driving is expected to be high.
+<br>
+•	Specific locations are targeted which won’t influence drivers drinking behaviours but rather their locations as well as drivers use of avoidance tactics. 
+<br>
+•	Specific drivers that draw police attention are more likely to be selected.
+<br>
+
+Observational Study 
+<br>
+More research is needed to concluded the amount of test needed to near road fatalities to zero.
+
+![](images/rbt3.png)
+Image Source:https://www.dailyliberal.com.au/story/6522945/police-blitz-nabs-speeding-drink-driving-motorists-in-region/
+
+Furthermore, since Positive RBTs has a correlation to road fatalities, if RBTs can breath test more licensed drivers and detect more positive breath test annually, the number of road fatalities involving an illegal BAC could potentially decrease at a continuous rate until there is near zero road fatalities caused by illegal BAC. Hence, it is recommended more strategically deployed RBTs that appear unpredictable. In smaller rural states/parts of Australia more focus on RBT enforcement due to the lack of transportation access. 
+
+# Acknowledgments {-}
+• Drug and Alcohol Research and Training Australia.(2020).Alcohol and Young People.Retrieved from http://darta.net.au/wordpress-content/uploads/2020/02/RBT-FINAL-2020.pdf
+<br>
+• Owens, D.,Boorman, M.Evaluating the deterrent effect of random breath testing (RBT) and random drug testing (RDT)—The driver’s perspective Research findings Monograph Series No. 41.Retrieved from https://www.aic.gov.au/sites/default/files/2020-05/monograph41.pdf
+<br>
+• Mah, V.(2021).Effects of Alcohol on Driving.Retrieved from https://www.andatechdistribution.com.au/blogs/resources/effects-of-alcohol-on-driving 
+<br>
+• Breathalysers-Australia.Statistics relating to drink driving injuries.Retrieved from https://breathalysers-australia.com.au/drink-driving/
+<br>
+• CARRS-Q.(2016).Fact Sheet: Drink Driving.Retrieved from https://www.nrspp.org.au/resources/fact-sheet-drink-driving/
+<br>
+• Roads and Traffic Authority.(2009).Drinking and driving.Retrieved from https://driveformula.com.au/en/wp-content/uploads/2013/04/Drinking-and-driving.pdf
+<br>
+• Alcohol and Drug Foundation.(2017).Blood alcohol levels.Retrieved from https://adf.org.au/insights/blood-alcohol-levels/
+<br>
+• Terer, K., & Brown, R.(2014).Effective drink driving prevention and enforcement strategies: Approaches to improving practice. Trends & issues in crime and criminal justice no. 472. Canberra: Australian Institute of Criminology.Retrieved from https://www.aic.gov.au/publications/tandi/tandi472
+<br>
+• Bureau of Infrastructure and Transport Research Economics.Australian Random Breath Testing.Retrieved from https://data.gov.au/data/dataset/australian-random-breath-testing
+
+
+
